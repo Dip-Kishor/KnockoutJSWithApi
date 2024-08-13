@@ -1,4 +1,5 @@
 ﻿using KOPracticeWithApi.Models;
+using KOPracticeWithApi.Models.ViewModel;
 using KOPracticeWithApi.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,8 +22,12 @@ namespace KOPracticeWithApi.Controllers.ApiController
         [HttpGet]
         public IActionResult GetItems()
         {
+           /* var items = await _itemService.GetAllItemsAsync();
+            var viewModels = items.Select(item => ConvertToViewModel(item)).ToList();
+            return Json(viewModels);*/
             List<ItemModel> itemModel = _itemService.GetItems();
-            return Ok(itemModel);
+            var viewModels = itemModel.Select(item => ConvertToViewModel(item)).ToList();
+            return Ok(viewModels);
         }
         [HttpGet("{id}")]
         public IActionResult GetItem(int id)
@@ -69,5 +74,17 @@ namespace KOPracticeWithApi.Controllers.ApiController
             _itemService.DeleteItem(id);
             return NoContent();
         }
+
+        public ItemViewModel ConvertToViewModel(ItemModel item)
+        {
+            return new ItemViewModel
+            {
+                Id = item.Id,
+                Name = item.Name,
+                Price = item.Price,
+                IsPublished = item.IsPublished,
+            };
+        }
+
     }
 }
