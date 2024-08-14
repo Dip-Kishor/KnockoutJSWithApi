@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Items";
+    ViewData["Title"] = "";
 }
 <h2>@ViewData["Title"]</h2>
 
@@ -9,27 +9,21 @@
 <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 <link rel="stylesheet" href="~/KOPracticeWithApi.styles.css" asp-append-version="true" />
 
+
 <div class="container mt-5">
-    <h2 class="mb-4">Add New Item</h2>
-    <div class="form-row align-items-center">
-        <div class="col-auto">
-            <input type="text" class="form-control mb-2" placeholder="Item Name" data-bind="value: newItemName" />
-        </div>
-        <div class="col-auto">
-            <input type="text" class="form-control mb-2" placeholder="Item Price" data-bind="value: newItemPrice" />
-        </div>
-        <div class="col-auto">
-            <div class="form-check mb-2">
-                <input type="checkbox" class="form-check-input" data-bind="checked: newItemIsPublished" />
-                <label class="form-check-label">Published</label>
-            </div>
-        </div>
-        <div class="col-auto">
-            <button class="btn btn-primary mb-2" data-bind="click: addItem">Add Item</button>
-        </div>
-    </div>
+    <div id="successMessageArea" class="alert alert-info shadow-lg rounded" role="alert" data-bind="visible: successMessage, text: successMessage"></div>
+    <div id="failMessageArea" class="alert alert-info shadow-lg rounded" role="alert" data-bind="visible: failureMessage, text: failureMessage"></div>
 
     <h2 class="mt-5 mb-4">Item List</h2>
+    <button class="btn btn-outline-primary btn-sm" data-toggle="modal" data-target="#addItemModal">Add New Item</button>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5>Total Items: <span data-bind="text: itemsCount"></span></h5>
+        </div>
+        <div>
+            <input type="text" class="form-control" placeholder="Search items..." data-bind="value: searchQuery, valueUpdate: 'keyup'" />
+        </div>
+    </div>
     <table class="table">
         <thead>
             <tr>
@@ -39,39 +33,135 @@
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody data-bind="foreach: items">
+        <tbody data-bind="foreach: pagedItems">
             <tr>
                 <td class="m-4" data-bind="text: name"></td>
                 <td data-bind="text: price"></td>
                 <td data-bind="text: isPublished"></td>
+               
                 <td>
-                    <button class="btn btn-outline-success btn-sm " data-bind="click: $parent.updateItem">Update</button>
+                    <button class="btn btn-outline-dark btn-sm" data-bind="click: function() { $parent.openImageModal(imageUrl) }">View</button>
+
+                    <button class="btn btn-outline-success btn-sm" data-bind="click: function() { $parent.fetchItemById(id())}">Edit</button>
                     <button class="btn btn-outline-danger btn-sm" data-bind="click: $parent.deleteItem">Delete</button>
                 </td>
-
-
             </tr>
         </tbody>
     </table>
+    <div>
+        <button class="btn-outline-primary" data-bind="click: previousPage, enable: currentPage() > 1"><</button>
+         <span data-bind="text: currentPage"></span> of <span data-bind="text: totalPages"></span>
+        <button class="btn-outline-primary" data-bind="click: nextPage, enable: currentPage() < totalPages()">></button>
+    </div>
+</div>
 
-    <ul class="list-group" data-bind="foreach: items">
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div class="input-group">
-                <input type="text" class="form-control mr-2" data-bind="value: name" />
-                <input type="text" class="form-control mr-2" data-bind="value: price" />
-                <div class="form-check m-4">
-                    <input type="checkbox" class="form-check-input" data-bind="checked: isPublished" />
-                    <label class="form-check-label">Published</label>
+<!-- Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-labelledby="addItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addItemModalLabel">Add New Item</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Form content -->
+                <div class="form-group">
+                    <label for="itemName">Name</label>
+                    <input type="text" class="form-control" id="itemName" placeholder="Enter item name" data-bind="value: newItemName">
+                    <div class="text-danger" data-bind="text: nameError"></div>
                 </div>
+                <div class="form-group">
+                    <label for="itemPrice">Price</label>
+                    <input type="text" class="form-control" id="itemPrice" placeholder="Enter item price" data-bind="value: newItemPrice">
+                    <div class="text-danger" data-bind="text: priceError"></div>
+                </div>
+                <label for="itemImage">Image:</label>
+                <input type="file" id="fileInput" data-bind="event: { change: fileSelected }">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="itemPublished" data-bind="checked: newItemIsPublished">
+                    <label class="form-check-label" for="itemPublished">Is Published</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="text-success" data-bind="visible: successItemAddMessage, text: successItemAddMessage"></div>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-bind="click: addItem">Add Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- Modal for updating Item Details -->
+<div class="modal fade" id="itemDetailsModal" tabindex="-1" role="dialog" aria-labelledby="itemDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="itemDetailsModalLabel">Update Item Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" data-bind="value: selectedItem().name"/>
+                    <div class="text-danger" data-bind="text: nameError"></div>
+                </div>
+                <div class="form-group">
+                    <label>Price:</label>
+                    <input type="text" data-bind="value: selectedItem().price"/>
+                    <div class="text-danger" data-bind="text: priceError"></div>
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="itemPublished" data-bind="checked: selectedItem().isPublished">
+                    <label class="form-check-label" for="itemPublished">Is Published</label>
+                </div>
+
                 
             </div>
-        </li>
-    </ul>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                
+                <button class="btn btn-outline-success btn-sm" data-bind="click: updateItem">Update</button>
 
+            </div>
+        </div>
+    </div>
 </div>
+
+
+<!-- Modal for Image -->
+
+<div class="modal fade" id="imageModal" tabindex="-1" role="dialog" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Item Image</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @* <img id="modalImage" src="" class="img-fluid" alt="Item Image" /> *@
+                <img id="modalImage" data-bind="attr: { src: selectedImageUrl }" class="img-fluid" alt="Item Image" />
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 
 <!-- Include Bootstrap JS and dependencies (jQuery, Popper.js) -->
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -81,7 +171,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/jquery/dist/jquery.js"></script>
     <!-- Include Knockout.js -->
-    <script src="~/js/knockout-3.5.1.js"></script>>
+    <script src="~/js/knockout-3.5.1.js"></script>
 
     <!-- Include your custom JavaScript files -->
     <script src="~/js/VM/ItemModel.js"></script>
