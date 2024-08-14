@@ -3,6 +3,7 @@ using KOPracticeWithApi.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KOPracticeWithApi.Data.Migrations
 {
     [DbContext(typeof(KOPracticeContext))]
-    partial class KOPracticeContextModelSnapshot : ModelSnapshot
+    [Migration("20240814075920_AddedImageUrlField")]
+    partial class AddedImageUrlField
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
