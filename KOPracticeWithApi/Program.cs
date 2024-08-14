@@ -14,6 +14,7 @@ builder.Services.AddTransient<IItemService, ItemService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
